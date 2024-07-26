@@ -1,0 +1,56 @@
+import pandas as pd
+import numpy as np
+import seaborn as sns
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import IsolationForest
+transaction=pd.read_csv("/content/credit_card_transactional_data.csv")
+transaction.head()
+transaction["Class"].value_counts()
+sns.countplot(x="Class",data=transaction)
+transaction.isnull().sum()
+transaction=transaction.fillna(transaction.median())
+sns.heatmap(transaction.corr())
+transaction.corr()
+transaction['Class'].value_counts()
+fraud=transaction[transaction['Class']==1]
+valid=transaction[transaction['Class']==0]
+contamination=len(fraud)/len(valid)
+print(contamination)
+print("Fraud Cases: {}".format(len(fraud)))
+print("Valid Cases: {}".format(len(valid)))
+x=transaction.drop(['Class'],axis=1)
+y=transaction['Class']
+clf=IsolationForest(n_estimators=500,max_samples=len(x),contamination=0.0018)
+clf.fit(x)
+SCORE=clf.decision_function(x)
+y_pred=clf.predict(x)
+sns.boxplot(SCORE)
+sns.histplot(SCORE,bins=70)
+transaction["score"]=SCORE
+transaction.query('score<0.0030')
+from sklearn.neighbors import LocalOutlierFactor
+from numpy import quantile, where, random
+lof = LocalOutlierFactor(n_neighbors=20,contamination=0.0018)
+y_pred = lof.fit_predict(x)
+X_array = x.to_numpy()
+y_index = where(y_pred==-1)
+outlier_values = X_array[y_index]
+import matplotlib.pyplot as plt
+plt.scatter(X_array[:,0], X_array[:,1])
+plt.scatter(outlier_values[:,0],outlier_values[:,1], color='r')
+plt.show()
+X = transaction.drop('Class',axis=1)
+y = transaction['Class']
+lof = LocalOutlierFactor()
+lof.fit_predict(X)
+anomaly_scores = lof.negative_outlier_factor_
+threshold = quantile(anomaly_scores, .01)
+print(threshold)
+X_array =  X.to_numpy()
+index = where(anomaly_scores<=threshold)
+outlier_values = X_array[index]
+plt.scatter(X_array[:,0], X_array[:,1])
+plt.scatter(outlier_values[:,0], outlier_values[:,1], color='r')
+plt.show()
+
